@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: ticket-booking
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/ticketbooking}
+    username: ${DB_USERNAME:ticketbooking}
+    password: ${DB_PASSWORD:ticketbooking}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # schema is owned entirely by Flyway migrations, never by Hibernate auto-DDL
+    # Off on purpose. Every view loads exactly what it renders through a
+    # fetch-joined repository query (see the *WithDetails / findHistoryForUser
+    # methods), and every write goes through a @Transactional service. That
+    # keeps queries explicit and also covers the code paths no HTTP request
+    # wraps: Vaadin push callbacks and the @Scheduled jobs.
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+
+# ----- app-specific config -----
+app:
+  hold:
+    ttl-minutes: ${HOLD_TTL_MINUTES:10}
+    max-seats: 10
+  demo:
+    # Keeps the demo catalog alive: tops up shows for the next few days on
+    # startup and nightly, so the browse page is never empty after the
+    # seeded dates pass. Set to false in a real deployment with real data.
+    auto-schedule: ${DEMO_AUTO_SCHEDULE:true}
+    days-ahead: 4
+
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder}
+  key-secret: ${RAZORPAY_KEY_SECRET:placeholder}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:placeholder}
+
+vaadin:
+  launch-browser: false
+  # Pure Java UI: no React router, no Hilla.
+  react:
+    enable: false
+  # Live Vite dev server in development: edits to
+  # src/main/frontend/themes/ticketbooking/styles.css show up on a browser
+  # refresh. Ignored in production builds (-Pproduction).
+  frontend:
+    hotdeploy: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    com.ticketbooking: INFO
